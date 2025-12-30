@@ -1,1 +1,2 @@
-vendor/
+/vendor
+/tests/last_transaction_id.txt

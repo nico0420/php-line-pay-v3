@@ -1,6 +1,7 @@
 <?php
 
 namespace NICO0420\LinePay;
+
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Psr7\Request;
 use Exception;
@@ -69,7 +70,7 @@ class Client
 
         // Check
         if (!$channelId || !$channelSecret) {
-            throw new Exception("channelId/channelSecret must be required", 400);
+            throw new Exception("channelId and channelSecret are required.", 400);
         }
 
         // Base Uri
@@ -112,7 +113,7 @@ class Client
      * Request payment
      *
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function request($bodyParams)
     {
@@ -130,7 +131,7 @@ class Client
      * @param array $queryParams
      * @param array $bodyParams
      * @param array $options
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     protected function requestHandler($method, $uri, $queryParams = null, $bodyParams = null, $options = [])
     {
@@ -147,8 +148,7 @@ class Client
         $options['on_stats'] = function (\GuzzleHttp\TransferStats $transferStats) use (&$stats) {
             // Assign object
             $stats = $transferStats;
-            $stats->responseTime = microtime(true);
-            $stats->requestTime = $stats->responseTime - $stats->getTransferTime();
+
         };
 
         $authNonce = date('c') . uniqid('-'); // ISO 8601 date + UUID 1
@@ -159,11 +159,11 @@ class Client
 
         // Send request with PSR-7 pattern
         $this->request = new Request($method, $url, $headers, $body);
-        $this->request->timestamp = microtime(true);
+
         try {
             $response = $this->httpClient->send($this->request, $options);
         } catch (\GuzzleHttp\Exception\ConnectException $e) {
-            throw new \yidas\linePay\exception\ConnectException($e->getMessage(), $this->request);
+            throw new \Exception($e->getMessage(), $e->getCode(), $e);
         }
 
         return new Response($response, $stats);
@@ -174,7 +174,7 @@ class Client
      *
      * @param integer $transactionId
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function authorizationsVoid($transactionId, $bodyParams = null)
     {
@@ -189,7 +189,7 @@ class Client
      *
      * @param array $queryParams
      * @param string $version API version
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function details($queryParams)
     {
@@ -204,7 +204,7 @@ class Client
      *
      * @param integer $transactionId
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function void($transactionId, $bodyParams = null)
     {
@@ -216,7 +216,7 @@ class Client
      *
      * @param integer $transactionId
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function confirm($transactionId, $bodyParams)
     {
@@ -231,7 +231,7 @@ class Client
      *
      * @param integer $transactionId
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function refund($transactionId, $bodyParams = null)
     {
@@ -245,7 +245,7 @@ class Client
      * 本API查詢LINE Pay付款請求的狀態。商家應隔一段時間後直接檢查付款狀態，不透過confirmUrl查看用戶是否已經確認付款，最終判斷交易是否完成。
      *
      * @param integer $transactionId
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function check($transactionId)
     {
@@ -260,7 +260,7 @@ class Client
      *
      * @param integer $transactionId
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function authorizationsCapture($transactionId, $bodyParams)
     {
@@ -275,7 +275,7 @@ class Client
      *
      * @param integer $regKey
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function preapproved($regKey, $bodyParams = null)
     {
@@ -290,7 +290,7 @@ class Client
      *
      * @param integer $regKey
      * @param array $queryParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function preapprovedCheck($regKey, $queryParams = null)
     {
@@ -305,7 +305,7 @@ class Client
      *
      * @param integer $regKey
      * @param array $bodyParams
-     * @return NICO0420\LinePay\Response
+     * @return NICO0420\linePay\Response
      */
     public function preapprovedExpire($regKey, $bodyParams = null)
     {

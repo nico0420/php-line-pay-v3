@@ -2,7 +2,9 @@
 
 namespace NICO0420\LinePay;
 
-class Response
+use ArrayAccess;
+
+class Response implements ArrayAccess
 {
     /**
      * @var object \GuzzleHttp\Psr7\Response $response
@@ -168,6 +170,7 @@ class Response
      * @param string $offset
      * @return boolean
      */
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return isset($this->toArray()[$offset]);
@@ -179,9 +182,33 @@ class Response
      * @param string $offset
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         $data = $this->toArray();
         return isset($data[$offset]) ? $data[$offset] : null;
+    }
+
+    /**
+     * ArrayAccess method offsetSet
+     *
+     * @param mixed $offset
+     * @param mixed $value
+     */
+    #[\ReturnTypeWillChange]
+    public function offsetSet($offset, $value)
+    {
+        // Response is immutable
+    }
+
+    /**
+     * ArrayAccess method offsetUnset
+     *
+     * @param mixed $offset
+     */
+    #[\ReturnTypeWillChange]
+    public function offsetUnset($offset)
+    {
+        // Response is immutable
     }
 }

@@ -1,91 +1,135 @@
-# LINE Pay v3 PHP SDK (NICO0420)
+# Line Pay SDK for PHP (v3)
 
-一個簡單的 LINE Pay v3 PHP 封裝，提供付款請求、確認、退款、查詢、授權處理等常用 API。內建 Sandbox / Production 主機切換與簽章產生。
+這是一個簡單易用的 Line Pay V3 API PHP 套件。
 
-## 安裝
+## 需求 (Requirements)
+
+- PHP >= 7.4 或 PHP >= 8.0
+- Composer
+
+## 安裝 (Installation)
 
 ```bash
 composer require nico0420/line-pay
 ```
 
-## 快速開始
+## 快速開始 (Quick Start)
+
+### 1. 初始化 Client
 
 ```php
-<?php
-require __DIR__ . '/vendor/autoload.php';
-
 use NICO0420\LinePay\Client;
 
 $linePay = new Client([
     'channelId' => 'YOUR_CHANNEL_ID',
     'channelSecret' => 'YOUR_CHANNEL_SECRET',
-    'isSandbox' => true, // 上線時請改成 false
+    'isSandbox' => true, // 正式環境請設為 false
 ]);
+```
 
-// 建立付款請求
+### 2. 請求付款 (Request Payment)
+
+```php
 $response = $linePay->request([
-    'amount' => 1000,
+    'amount' => 100,
     'currency' => 'TWD',
-    'orderId' => 'ORDER-123',
-    'packages' => [[
-        'id' => 'PKG-1',
-        'amount' => 1000,
-        'products' => [[
-            'id' => 'PROD-1',
-            'name' => '測試商品',
-            'quantity' => 1,
-            'price' => 1000,
-        ]],
-    ]],
-    'redirectUrls' => [
-        'confirmUrl' => 'https://your.app/linepay/confirm',
-        'cancelUrl' => 'https://your.app/linepay/cancel',
-        'confirmUrlType' => 'CLIENT', // 預設 CLIENT，可依需求調整
+    'orderId' => 'ORDER_20250101_001',
+    'packages' => [
+        [
+            'id' => 'PKG_1',
+            'amount' => 100,
+            'products' => [
+                [
+                    'name' => '測試商品',
+                    'quantity' => 1,
+                    'price' => 100,
+                    'imageUrl' => 'https://example.com/image.jpg'
+                ]
+            ]
+        ]
     ],
+    'redirectUrls' => [
+        'confirmUrl' => 'https://your-domain.com/pay/confirm',
+        'cancelUrl' => 'https://your-domain.com/pay/cancel',
+    ]
 ]);
 
 if ($response->isSuccessful()) {
-    // 導向付款頁
-    header('Location: ' . $response->getPaymentUrl());
-    exit;
+    $paymentUrl = $response->getPaymentUrl();
+    // 導引使用者前往付款頁面
+    header("Location: $paymentUrl");
 }
-
-throw new \RuntimeException($response->getReturnMessage());
 ```
 
-## 可用方法
+### 3. 確認付款 (Confirm Payment)
 
-- `request(array $bodyParams)`：建立付款請求。
-- `confirm(int $transactionId, array $bodyParams)`：付款確認。
-- `refund(int $transactionId, array $bodyParams = null)`：退款 / 部分退款。
-- `details(array $queryParams)`：查詢交易紀錄。
-- `check(int $transactionId)`：查詢付款請求狀態。
-- `authorizationsCapture(int $transactionId, array $bodyParams)`：授權請款。
-- `authorizationsVoid(int $transactionId, array $bodyParams = null)` / `void(...)`：取消授權。
-- `preapproved(int $regKey, array $bodyParams = null)`：以 RegKey 直接扣款。
-- `preapprovedCheck(int $regKey, array $queryParams = null)`：查詢 RegKey 狀態。
-- `preapprovedExpire(int $regKey, array $bodyParams = null)`：使 RegKey 失效。
+當使用者付款完成後，Line Pay 會導回 `confirmUrl` 並帶上 `transactionId`。
 
-每個方法都會回傳 `NICO0420\LinePay\Response`：
-- `isSuccessful()`：回傳是否為 `returnCode === '0000'`
-- `getReturnCode()` / `getReturnMessage()`
-- `getInfo()`、`getPaymentUrl($type = 'web')`
-- `toArray()` / `toObject()` 取得完整回應
+```php
+$transactionId = $_GET['transactionId']; // 從 Query String 取得
 
-## 開發與測試
+$response = $linePay->confirm($transactionId, [
+    'amount' => 100,
+    'currency' => 'TWD',
+]);
+
+if ($response->isSuccessful()) {
+    echo "付款成功！交易編號: " . $response->info['transactionId'];
+} else {
+    echo "付款失敗: " . $response->getReturnMessage();
+}
+```
+
+---
+
+## 開發與測試 (Development & Testing)
+
+本套件包含了一套完整的測試工作流，方便您在本機進行沙盒測試。
+
+### 步驟 1: 啟動本機測試伺服器
+
+請開啟一個新的 Terminal 視窗，執行：
 
 ```bash
-composer install
-vendor/bin/phpunit
+php -S localhost:8080 -t tests/ tests/router.php
 ```
 
-測試檔 `tests/Test.php` 示範了 request 與 confirm 的基本使用，已使用 Faker 生成隨機資料以避免真實敏感資訊。
+> 這個伺服器會負責接收 Line Pay 的 Callback，並自動儲存 Transaction ID。
 
-## 需求
+### 步驟 2: 執行付款請求測試
 
-- PHP >= 5.5（依 composer.json）
-- Guzzle 7.x
+在原本的 Terminal 執行：
 
-## 授權
+```bash
+vendor/bin/phpunit --filter testRequest
+```
 
-GPL-2.0-only。詳見 `LICENSE`。
+執行後：
+
+1.  程式會自動開啟瀏覽器前往 Line Pay 付款頁面。
+2.  請登入 Line 並完成付款動作。
+3.  付款完成後，瀏覽器會跳轉到 `localhost:8080` 並顯示綠色成功畫面。
+
+### 步驟 3: 執行確認付款測試
+
+接著直接執行：
+
+```bash
+vendor/bin/phpunit --filter testConfirm
+```
+
+1.  程式會自動讀取剛剛暫存的 `Transaction ID`。
+2.  執行確認請款 API。
+3.  驗證成功後，會自動清除暫存檔。
+
+### 手動指定 Transaction ID
+
+如果您想手動輸入 ID 進行測試：
+
+```bash
+TRANSACTION_ID=20210322... vendor/bin/phpunit --filter testConfirm
+```
+
+## License
+
+GPL
